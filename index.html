@@ -62,7 +62,7 @@
         <div id="resultCard" class="hidden glass-card rounded-2xl p-6 shadow-2xl text-left animate-fade-in-up">
             <div class="flex flex-col md:flex-row gap-6 items-center md:items-start">
                 <!-- Thumbnail -->
-                <img id="videoThumb" src="" alt="Thumbnail" class="w-48 h-64 object-cover rounded-xl shadow-md">
+                <img id="videoThumb" src="" alt="Thumbnail" class="w-48 h-64 object-cover rounded-xl shadow-md bg-gray-800">
                 
                 <!-- Video Info & Buttons -->
                 <div class="flex flex-col flex-1 space-y-4 w-full">
@@ -117,80 +117,71 @@
                 const response = await fetch(apiUrl);
                 const json = await response.json();
 
-                console.log("API Response:", json); // Debug log
+                console.log("Full API Response:", json);
 
                 if (json.status === "success") {
                     const data = json.data;
                     
-                    console.log("Data received:", data); // Debug log
+                    // 1. Extract Description
+                    const descText = data.desc || data.description || data.title || 'No description';
                     
-                    // SAFELY extract data - handle multiple possible formats
+                    // 2. Extract Author Name
+                    const authorName = data.author?.nickname || data.author?.uniqueId || data.author || 'user';
+                    
+                    // 3. Extract Thumbnail (Cover) - Try every possible location
                     let coverUrl = null;
-                    if (typeof data.cover === 'string') {
-                        coverUrl = data.cover;
-                    } else if (Array.isArray(data.cover) && data.cover.length > 0) {
-                        coverUrl = data.cover[0];
+                    if (data.cover) {
+                        coverUrl = Array.isArray(data.cover) ? data.cover[0] : data.cover;
+                    } else if (data.video?.cover) {
+                        coverUrl = Array.isArray(data.video.cover) ? data.video.cover[0] : data.video.cover;
+                    } else if (data.author?.avatar) {
+                        coverUrl = data.author.avatar;
                     }
 
-                    const authorName = data.author?.nickname || data.author || 'user';
-                    const descText = data.description || data.title || 'No description';
-                    
-                    // Extract audio link
-                    let audioLink = null;
-                    if (typeof data.music === 'string') {
-                        audioLink = data.music;
-                    } else if (Array.isArray(data.music) && data.music.length > 0) {
-                        audioLink = data.music[0];
-                    }
-
-                    // Bulletproof Video Link Extraction
+                    // 4. Extract Video Link - Try every possible location
                     let videoLink = null;
-                    if (typeof data.video === 'string') {
-                        videoLink = data.video;
-                    } else if (Array.isArray(data.video) && data.video.length > 0) {
-                        videoLink = data.video[0];
-                    } else if (typeof data.play === 'string') {
+                    if (data.video?.playAddr) {
+                        videoLink = Array.isArray(data.video.playAddr) ? data.video.playAddr[0] : data.video.playAddr;
+                    } else if (data.video) {
+                        videoLink = Array.isArray(data.video) ? data.video[0] : (data.video.play || data.play || data.video);
+                    } else if (data.play) {
                         videoLink = data.play;
                     }
 
-                    // Check if it's a Photo Slideshow
-                    const isPhotoSlideshow = data.images && Array.isArray(data.images) && data.images.length > 0;
-
-                    console.log("Video Link:", videoLink); // Debug log
-                    console.log("Audio Link:", audioLink); // Debug log
-                    console.log("Cover URL:", coverUrl); // Debug log
-
-                    // Populate the UI
-                    const thumbElement = document.getElementById('videoThumb');
-                    if (coverUrl) {
-                        thumbElement.src = coverUrl;
-                    } else {
-                        thumbElement.src = 'https://via.placeholder.com/192x256?text=No+Thumbnail';
+                    // 5. Extract Audio Link - Try every possible location
+                    let audioLink = null;
+                    if (data.music?.playUrl) {
+                        audioLink = Array.isArray(data.music.playUrl) ? data.music.playUrl[0] : data.music.playUrl;
+                    } else if (data.music) {
+                        audioLink = Array.isArray(data.music) ? data.music[0] : (data.music.play || data.music);
                     }
 
+                    // 6. Check for Photo Slideshow
+                    const isPhotoSlideshow = data.images && Array.isArray(data.images) && data.images.length > 0;
+
+                    console.log("Extracted Video Link:", videoLink);
+                    console.log("Extracted Audio Link:", audioLink);
+                    console.log("Extracted Cover URL:", coverUrl);
+
+                    // Update UI
+                    document.getElementById('videoThumb').src = coverUrl || 'https://via.placeholder.com/192x256?text=TikTok';
                     document.getElementById('authorName').innerText = `@${authorName}`;
                     document.getElementById('videoDesc').innerText = descText;
                     
                     const downloadBtn = document.getElementById('downloadBtn');
-                    
                     if (isPhotoSlideshow) {
-                        // Handle Photo Slideshow
                         downloadBtn.innerHTML = '<i class="fa-solid fa-image"></i> Open Image Slideshow';
                         downloadBtn.href = data.images[0];
                         downloadBtn.style.display = 'flex';
                         document.getElementById('videoDesc').innerText = "📸 Photo Slideshow: " + descText;
                     } else if (videoLink) {
-                        // Handle Standard Video
                         downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> Download No Watermark';
                         downloadBtn.href = videoLink;
                         downloadBtn.style.display = 'flex';
                     } else {
-                        // No video or images found
                         downloadBtn.style.display = 'none';
-                        showError("No video found. This might be a private video or unavailable content.");
                     }
                     
-                    // Handle Audio
                     const audioBtn = document.getElementById('audioBtn');
                     if (audioLink) {
                         audioBtn.href = audioLink;
@@ -199,7 +190,12 @@
                         audioBtn.style.display = 'none';
                     }
 
-                    // Hide loading, show result
+                    // If neither video nor audio is found, show error
+                    if (!videoLink && !audioLink && !isPhotoSlideshow) {
+                        throw new Error("Could not find any download links for this video.");
+                    }
+
+                    // Final UI Update
                     loading.classList.add('hidden');
                     loading.classList.remove('flex');
                     resultCard.classList.remove('hidden');
@@ -207,7 +203,7 @@
                     throw new Error(json.message || "Failed to fetch video.");
                 }
             } catch (error) {
-                console.error("Error:", error); // Debug log
+                console.error("Extraction Error:", error);
                 loading.classList.add('hidden');
                 loading.classList.remove('flex');
                 showError(error.message || "Something went wrong. Please try again.");
@@ -220,6 +216,5 @@
             errorMessage.classList.remove('hidden');
         }
     </script>
-
 </body>
 </html>
