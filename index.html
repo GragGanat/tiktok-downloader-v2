@@ -94,15 +94,6 @@
             animation: slideOut 0.3s ease-out forwards;
         }
         
-        /* Video player styling */
-        video {
-            background-color: #000;
-        }
-        
-        video::-webkit-media-controls-panel {
-            background-color: rgba(0, 0, 0, 0.8);
-        }
-        
         /* Fade in animation */
         @keyframes fadeInUp {
             from {
@@ -127,6 +118,29 @@
                 left: 10px;
                 max-width: none;
             }
+        }
+
+        /* Video preview thumbnail styling */
+        .video-preview-container {
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .video-preview-container:hover .play-button {
+            transform: scale(1.1);
+        }
+
+        .play-button {
+            transition: transform 0.3s ease-out;
+        }
+
+        .video-overlay {
+            transition: background-color 0.3s ease-out;
+        }
+
+        .video-preview-container:hover .video-overlay {
+            background-color: rgba(0, 0, 0, 0.6);
         }
     </style>
 </head>
@@ -185,12 +199,17 @@
         <!-- Result Card (Hidden by default) -->
         <div id="resultCard" class="hidden glass-card rounded-2xl p-6 shadow-2xl text-left animate-fade-in-up">
             <div class="flex flex-col md:flex-row gap-6 items-start">
-                <!-- Video Preview Player -->
-                <div class="w-full md:w-48 h-64 rounded-xl shadow-md bg-gray-800 overflow-hidden flex-shrink-0">
-                    <video id="videoPreview" controls class="w-full h-full object-cover" crossorigin="anonymous">
-                        <source id="videoSource" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
+                <!-- Video Preview Thumbnail with Play Button -->
+                <div id="videoPreviewContainer" onclick="downloadVideoPreview()" 
+                    class="video-preview-container w-full md:w-48 h-64 rounded-xl shadow-md bg-gray-800 overflow-hidden flex-shrink-0 group">
+                    <img id="videoPreview" src="" alt="Video Thumbnail" class="w-full h-full object-cover">
+                    
+                    <!-- Play Button Overlay -->
+                    <div class="video-overlay absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/60 transition-all">
+                        <button class="play-button w-16 h-16 bg-pink-600 hover:bg-pink-500 rounded-full flex items-center justify-center transition-all transform group-hover:scale-110">
+                            <i class="fa-solid fa-play text-white text-2xl ml-1"></i>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Video Info & Buttons -->
@@ -311,6 +330,17 @@
             });
         }
 
+        // ==================== DOWNLOAD VIDEO PREVIEW ====================
+        function downloadVideoPreview() {
+            if (!currentVideoLink) {
+                showToast('❌ No video link available', 'error');
+                return;
+            }
+            
+            showToast('📺 Opening video in new tab...', 'info', 2000);
+            window.open(currentVideoLink, '_blank');
+        }
+
         // ==================== SET QUALITY BADGE ====================
         function setQualityBadge(quality) {
             const badge = document.getElementById('qualityBadge');
@@ -345,6 +375,7 @@
                     const response = await fetch(currentVideoLink);
                     const blob = await response.blob();
                     
+                    // Check if Web Share API is available
                     if (navigator.share) {
                         await navigator.share({
                             title: 'TikTok Video',
@@ -459,18 +490,13 @@
                     currentVideoLink = videoLink;
                     currentAudioLink = audioLink;
 
-                    // Set video preview player
+                    // Set video preview thumbnail (no CORS issues!)
                     const videoPreview = document.getElementById('videoPreview');
-                    const videoSource = document.getElementById('videoSource');
 
-                    if (videoLink) {
-                        videoSource.src = videoLink;
-                        videoPreview.load();
-                        videoPreview.style.display = 'block';
-                    } else if (coverUrl) {
-                        // Fallback: show thumbnail as poster
-                        videoPreview.poster = coverUrl;
-                        videoPreview.style.display = 'block';
+                    if (coverUrl) {
+                        videoPreview.src = coverUrl;
+                    } else {
+                        videoPreview.src = 'https://via.placeholder.com/192x256?text=TikTok+Video';
                     }
 
                     // Update UI
@@ -530,13 +556,6 @@
         document.getElementById('urlInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 fetchVideo();
-            }
-        });
-
-        // Ctrl+V to paste (on input focus)
-        document.getElementById('urlInput').addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-                // Let browser handle default paste
             }
         });
     </script>
