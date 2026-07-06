@@ -117,18 +117,18 @@
                     </div>
                     
                     <div class="flex flex-col space-y-3 pt-4">
-                        <a id="downloadBtn" href="#" target="_blank" 
+                        <button id="downloadBtn" onclick="handleDownload()" 
                             class="w-full bg-pink-600 hover:bg-pink-500 text-white text-center font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
                             <i class="fa-solid fa-download"></i> Download No Watermark
-                        </a>
-                        <a id="audioBtn" href="#" target="_blank" 
+                        </button>
+                        <button id="audioBtn" onclick="handleAudioDownload()" 
                             class="w-full bg-gray-700 hover:bg-gray-600 text-white text-center font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
                             <i class="fa-solid fa-music"></i> Download Audio (MP3)
-                        </a>
+                        </button>
                     </div>
 
                     <p class="text-xs text-gray-400 text-center mt-2">
-                        📱 <b>iPhone/Android:</b> Tap the download button to save directly to your Photos.
+                        📱 <b>iPhone/Android:</b> Tap to save directly to your Photos.
                     </p>
                 </div>
             </div>
@@ -137,6 +137,10 @@
     </div>
 
     <script>
+        // Store video and audio links globally
+        let currentVideoLink = null;
+        let currentAudioLink = null;
+
         // Smart Mobile Detection
         const isMobileDevice = () => {
             return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -193,6 +197,53 @@
             }
         }
 
+        // Handle Video Download (Same Tab on Mobile, New Tab on Desktop)
+        async function handleDownload() {
+            if (!currentVideoLink) {
+                showError("No video link available");
+                return;
+            }
+
+            if (isMobileDevice()) {
+                // Mobile: Use Web Share API to save to Photos
+                try {
+                    // Try to use Web Share API with blob
+                    const response = await fetch(currentVideoLink);
+                    const blob = await response.blob();
+                    
+                    // Check if Web Share API is available
+                    if (navigator.share) {
+                        await navigator.share({
+                            title: 'TikTok Video',
+                            text: 'Downloaded from TikTok Downloader',
+                            files: [new File([blob], 'tiktok_video.mp4', { type: 'video/mp4' })]
+                        });
+                    } else {
+                        // Fallback: Open in same tab
+                        window.location.href = currentVideoLink;
+                    }
+                } catch (error) {
+                    console.error('Share failed:', error);
+                    // Fallback: Open in same tab
+                    window.location.href = currentVideoLink;
+                }
+            } else {
+                // Desktop: Open in same tab (user can right-click to save)
+                window.location.href = currentVideoLink;
+            }
+        }
+
+        // Handle Audio Download (Same Tab)
+        function handleAudioDownload() {
+            if (!currentAudioLink) {
+                showError("No audio link available");
+                return;
+            }
+
+            // Open audio in same tab
+            window.location.href = currentAudioLink;
+        }
+
         // Main Fetch Video Function
         async function fetchVideo() {
             const urlInput = document.getElementById('urlInput').value;
@@ -240,7 +291,7 @@
                         coverUrl = data.author.avatar;
                     }
 
-                    // Extract Video Link - Try every possible location
+                    // Extract Video Link
                     let videoLink = null;
                     if (data.video?.playAddr) {
                         videoLink = Array.isArray(data.video.playAddr) ? data.video.playAddr[0] : data.video.playAddr;
@@ -269,6 +320,10 @@
                     console.log("Extracted Cover URL:", coverUrl);
                     console.log("Video Quality:", videoQuality);
 
+                    // Store links globally for download handlers
+                    currentVideoLink = videoLink;
+                    currentAudioLink = audioLink;
+
                     // Update UI
                     document.getElementById('videoThumb').src = coverUrl || 'https://via.placeholder.com/192x256?text=TikTok';
                     document.getElementById('authorName').innerText = `@${authorName}`;
@@ -281,14 +336,12 @@
                     
                     if (isPhotoSlideshow) {
                         downloadBtn.innerHTML = '<i class="fa-solid fa-image"></i> Open Image Slideshow';
-                        downloadBtn.href = data.images[0];
-                        downloadBtn.style.display = 'flex';
+                        currentVideoLink = data.images[0];
                         document.getElementById('videoDesc').innerText = "📸 Photo Slideshow: " + descText;
+                        downloadBtn.style.display = 'flex';
+                        document.getElementById('audioBtn').style.display = 'none';
                     } else if (videoLink) {
                         downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> Download No Watermark';
-                        // Direct link - opens in new tab
-                        downloadBtn.href = videoLink;
-                        downloadBtn.target = '_blank';
                         downloadBtn.style.display = 'flex';
                     } else {
                         downloadBtn.style.display = 'none';
@@ -296,7 +349,6 @@
                     
                     const audioBtn = document.getElementById('audioBtn');
                     if (audioLink) {
-                        audioBtn.href = audioLink;
                         audioBtn.style.display = 'flex';
                     } else {
                         audioBtn.style.display = 'none';
