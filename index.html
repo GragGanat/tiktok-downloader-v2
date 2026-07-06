@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Downloader | No Watermark</title>
+    <title>TikTok Downloader | No Watermark | HD Quality</title>
     <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for icons -->
@@ -21,6 +21,26 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        /* Quality badge styling */
+        .quality-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            font-size: 0.875rem;
+        }
+        .quality-hd {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .quality-sd {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .quality-high {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white font-sans min-h-screen flex flex-col items-center justify-center p-4">
@@ -33,7 +53,7 @@
             <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">
                 TikTok <span class="text-gradient">Downloader</span>
             </h1>
-            <p class="text-gray-400 text-lg">Download videos without watermark for free.</p>
+            <p class="text-gray-400 text-lg">Download videos in HD quality (720p - 1080p) without watermark for free.</p>
         </div>
 
         <!-- Input Area -->
@@ -67,7 +87,7 @@
         <!-- Loading Spinner (Hidden by default) -->
         <div id="loading" class="hidden flex-col items-center justify-center space-y-3 py-8">
             <i class="fa-solid fa-circle-notch fa-spin text-4xl text-pink-500"></i>
-            <p class="text-gray-400 animate-pulse">Extracting video magic...</p>
+            <p class="text-gray-400 animate-pulse">Extracting video in HD quality...</p>
         </div>
 
         <!-- Error Message (Hidden by default) -->
@@ -86,6 +106,14 @@
                     <div>
                         <h3 id="authorName" class="text-xl font-bold text-white">@username</h3>
                         <p id="videoDesc" class="text-gray-400 text-sm mt-1 line-clamp-3">Video description goes here...</p>
+                    </div>
+                    
+                    <!-- Quality Badge -->
+                    <div id="qualityBadgeContainer" class="flex items-center gap-2">
+                        <span class="text-gray-400 text-sm">Video Quality:</span>
+                        <span id="qualityBadge" class="quality-badge quality-hd">
+                            <i class="fa-solid fa-star"></i> 1080p HD
+                        </span>
                     </div>
                     
                     <div class="flex flex-col space-y-3 pt-4">
@@ -141,6 +169,27 @@
             } catch (err) {
                 console.error('Failed to read clipboard:', err);
                 alert('Unable to access clipboard. Please paste manually.');
+            }
+        }
+
+        // Function to set quality badge styling
+        function setQualityBadge(quality) {
+            const badge = document.getElementById('qualityBadge');
+            badge.textContent = quality;
+            
+            // Remove all quality classes
+            badge.classList.remove('quality-hd', 'quality-sd', 'quality-high');
+            
+            // Add appropriate class based on quality
+            if (quality.includes('1080') || quality.includes('HD')) {
+                badge.classList.add('quality-hd');
+                badge.innerHTML = '<i class="fa-solid fa-star"></i> ' + quality;
+            } else if (quality.includes('720') || quality.includes('SD')) {
+                badge.classList.add('quality-sd');
+                badge.innerHTML = '<i class="fa-solid fa-video"></i> ' + quality;
+            } else {
+                badge.classList.add('quality-high');
+                badge.innerHTML = '<i class="fa-solid fa-film"></i> ' + quality;
             }
         }
 
@@ -209,17 +258,24 @@
                         audioLink = Array.isArray(data.music) ? data.music[0] : (data.music.play || data.music);
                     }
 
+                    // Extract Video Quality
+                    const videoQuality = data.videoQuality || 'Unknown Quality';
+
                     // Check for Photo Slideshow
                     const isPhotoSlideshow = data.images && Array.isArray(data.images) && data.images.length > 0;
 
                     console.log("Extracted Video Link:", videoLink);
                     console.log("Extracted Audio Link:", audioLink);
                     console.log("Extracted Cover URL:", coverUrl);
+                    console.log("Video Quality:", videoQuality);
 
                     // Update UI
                     document.getElementById('videoThumb').src = coverUrl || 'https://via.placeholder.com/192x256?text=TikTok';
                     document.getElementById('authorName').innerText = `@${authorName}`;
                     document.getElementById('videoDesc').innerText = descText;
+                    
+                    // Update Quality Badge
+                    setQualityBadge(videoQuality);
                     
                     const downloadBtn = document.getElementById('downloadBtn');
                     
@@ -230,7 +286,7 @@
                         document.getElementById('videoDesc').innerText = "📸 Photo Slideshow: " + descText;
                     } else if (videoLink) {
                         downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> Download No Watermark';
-                        // OPTION 1: Direct link - opens in new tab
+                        // Direct link - opens in new tab
                         downloadBtn.href = videoLink;
                         downloadBtn.target = '_blank';
                         downloadBtn.style.display = 'flex';
