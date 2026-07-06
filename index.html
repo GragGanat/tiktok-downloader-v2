@@ -91,7 +91,7 @@
 
     </div>
 
-        <script>
+           <script>
         async function fetchVideo() {
             const urlInput = document.getElementById('urlInput').value;
             const loading = document.getElementById('loading');
@@ -112,7 +112,6 @@
             loading.classList.add('flex');
 
             try {
-                // Using relative path so it always works on your Vercel domain
                 const apiUrl = `/api/download?url=${encodeURIComponent(urlInput)}`;
                 
                 const response = await fetch(apiUrl);
@@ -121,21 +120,49 @@
                 if (json.status === "success") {
                     const data = json.data;
                     
-                    // SAFELY extract data (handles v1, v2, and v3 formats without crashing)
+                    // SAFELY extract data
                     const coverUrl = Array.isArray(data.cover) ? data.cover[0] : data.cover;
                     const authorName = data.author?.nickname || data.author || 'user';
                     const descText = data.description || data.title || 'No description';
-                    const videoLink = Array.isArray(data.video) ? data.video[0] : (data.video || data.play);
                     const audioLink = Array.isArray(data.music) ? data.music[0] : data.music;
+
+                    // Bulletproof Video Link Extraction
+                    let videoLink = null;
+                    if (typeof data.video === 'string') {
+                        videoLink = data.video;
+                    } else if (Array.isArray(data.video) && data.video.length > 0) {
+                        videoLink = data.video[0];
+                    } else if (typeof data.play === 'string') {
+                        videoLink = data.play;
+                    }
+
+                    // Check if it's a Photo Slideshow
+                    const isPhotoSlideshow = data.images && data.images.length > 0;
 
                     // Populate the UI
                     document.getElementById('videoThumb').src = coverUrl || 'https://via.placeholder.com/150';
                     document.getElementById('authorName' ).innerText = `@${authorName}`;
                     document.getElementById('videoDesc').innerText = descText;
                     
-                    // Set Download Links
-                    document.getElementById('downloadBtn').href = videoLink;
+                    const downloadBtn = document.getElementById('downloadBtn');
                     
+                    if (isPhotoSlideshow) {
+                        // Handle Photo Slideshow
+                        downloadBtn.innerHTML = '<i class="fa-solid fa-image"></i> Open Image Slideshow';
+                        downloadBtn.href = data.images[0]; // Links to the first image
+                        downloadBtn.style.display = 'flex';
+                        document.getElementById('videoDesc').innerText = "📸 Photo Slideshow: " + descText;
+                    } else if (videoLink) {
+                        // Handle Standard Video
+                        downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> Download No Watermark';
+                        downloadBtn.href = videoLink;
+                        downloadBtn.style.display = 'flex';
+                    } else {
+                        // No video or images found
+                        downloadBtn.style.display = 'none';
+                    }
+                    
+                    // Handle Audio
                     if (audioLink) {
                         document.getElementById('audioBtn').href = audioLink;
                         document.getElementById('audioBtn').style.display = 'flex';
