@@ -58,22 +58,22 @@
 
         <!-- Input Area -->
         <div class="w-full space-y-3">
-            <!-- Search Input with X and Paste Buttons -->
+            <!-- Paste Button (Above Search) -->
+            <button id="pasteBtn" onclick="pasteFromClipboard()" 
+                class="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-white font-semibold px-4 py-2.5 rounded-lg transition-all text-sm flex items-center justify-center gap-2 shadow-lg">
+                <i class="fa-solid fa-paste"></i> Paste from Clipboard
+            </button>
+
+            <!-- Search Input with Link Icon and X Button -->
             <div class="relative flex items-center w-full">
                 <i class="fa-solid fa-link absolute left-4 text-gray-400"></i>
                 <input type="text" id="urlInput" placeholder="Paste TikTok link here..." 
-                    class="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 pl-12 pr-24 text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition-all shadow-lg">
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 pl-12 pr-12 text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition-all shadow-lg">
                 
-                <!-- X Button (Clear) -->
+                <!-- X Button (Clear) - At the end of search bar -->
                 <button id="clearBtn" onclick="clearInput()" 
-                    class="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors hidden">
+                    class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors hidden">
                     <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-                
-                <!-- Paste Button -->
-                <button id="pasteBtn" onclick="pasteFromClipboard()" 
-                    class="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-white font-semibold px-3 py-1.5 rounded-lg transition-all text-sm flex items-center gap-1">
-                    <i class="fa-solid fa-paste"></i> Paste
                 </button>
             </div>
 
