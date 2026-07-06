@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Downloader | No Watermark</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom gradient text for the title */
+        .text-gradient {
+            background: linear-gradient(to right, #00f2fe, #fe0979);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* Glassmorphism effect for the result card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Main Container -->
+    <div class="w-full max-w-2xl text-center space-y-8">
+        
+        <!-- Header -->
+        <div class="space-y-2">
+            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">
+                TikTok <span class="text-gradient">Downloader</span>
+            </h1>
+            <p class="text-gray-400 text-lg">Download videos without watermark for free.</p>
+        </div>
+
+        <!-- Input Area -->
+        <div class="relative flex items-center w-full">
+            <i class="fa-solid fa-link absolute left-4 text-gray-400"></i>
+            <input type="text" id="urlInput" placeholder="Paste TikTok link here..." 
+                class="w-full bg-gray-800 border border-gray-700 rounded-full py-4 pl-12 pr-32 text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition-all shadow-lg">
+            <button id="fetchBtn" onclick="fetchVideo()" 
+                class="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-cyan-500 to-pink-500 hover:from-cyan-400 hover:to-pink-400 text-white font-bold px-6 rounded-full transition-all transform hover:scale-105">
+                Get Video
+            </button>
+        </div>
+
+        <!-- Loading Spinner (Hidden by default) -->
+        <div id="loading" class="hidden flex-col items-center justify-center space-y-3 py-8">
+            <i class="fa-solid fa-circle-notch fa-spin text-4xl text-pink-500"></i>
+            <p class="text-gray-400 animate-pulse">Extracting video magic...</p>
+        </div>
+
+        <!-- Error Message (Hidden by default) -->
+        <div id="errorMessage" class="hidden bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm">
+            <!-- Error text goes here -->
+        </div>
+
+        <!-- Result Card (Hidden by default) -->
+        <div id="resultCard" class="hidden glass-card rounded-2xl p-6 shadow-2xl text-left animate-fade-in-up">
+            <div class="flex flex-col md:flex-row gap-6 items-center md:items-start">
+                <!-- Thumbnail -->
+                <img id="videoThumb" src="" alt="Thumbnail" class="w-48 h-64 object-cover rounded-xl shadow-md">
+                
+                <!-- Video Info & Buttons -->
+                <div class="flex flex-col flex-1 space-y-4 w-full">
+                    <div>
+                        <h3 id="authorName" class="text-xl font-bold text-white">@username</h3>
+                        <p id="videoDesc" class="text-gray-400 text-sm mt-1 line-clamp-3">Video description goes here...</p>
+                    </div>
+                    
+                    <div class="flex flex-col space-y-3 pt-4">
+                        <a id="downloadBtn" href="#" target="_blank" 
+                            class="w-full bg-pink-600 hover:bg-pink-500 text-white text-center font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-download"></i> Download No Watermark
+                        </a>
+                        <a id="audioBtn" href="#" target="_blank" 
+                            class="w-full bg-gray-700 hover:bg-gray-600 text-white text-center font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-music"></i> Download Audio (MP3)
+                        </a>
+                    </div>
+
+                    <p class="text-xs text-gray-400 text-center mt-2">
+                        📱 <b>iPhone/Android:</b> If the video opens in a new tab, tap the <b>Share</b> icon and select <b>"Save Video"</b> to save it to your Photos.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        async function fetchVideo() {
+            const urlInput = document.getElementById('urlInput').value;
+            const loading = document.getElementById('loading');
+            const resultCard = document.getElementById('resultCard');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Reset UI
+            errorMessage.classList.add('hidden');
+            resultCard.classList.add('hidden');
+
+            if (!urlInput) {
+                showError("Please paste a TikTok link first!");
+                return;
+            }
+
+            // Show loading
+            loading.classList.remove('hidden');
+            loading.classList.add('flex');
+
+            try {
+                const apiUrl = `/api/download?url=${encodeURIComponent(urlInput)}`;
+                
+                const response = await fetch(apiUrl);
+                const json = await response.json();
+
+                console.log("API Response:", json); // Debug log
+
+                if (json.status === "success") {
+                    const data = json.data;
+                    
+                    console.log("Data received:", data); // Debug log
+                    
+                    // SAFELY extract data - handle multiple possible formats
+                    let coverUrl = null;
+                    if (typeof data.cover === 'string') {
+                        coverUrl = data.cover;
+                    } else if (Array.isArray(data.cover) && data.cover.length > 0) {
+                        coverUrl = data.cover[0];
+                    }
+
+                    const authorName = data.author?.nickname || data.author || 'user';
+                    const descText = data.description || data.title || 'No description';
+                    
+                    // Extract audio link
+                    let audioLink = null;
+                    if (typeof data.music === 'string') {
+                        audioLink = data.music;
+                    } else if (Array.isArray(data.music) && data.music.length > 0) {
+                        audioLink = data.music[0];
+                    }
+
+                    // Bulletproof Video Link Extraction
+                    let videoLink = null;
+                    if (typeof data.video === 'string') {
+                        videoLink = data.video;
+                    } else if (Array.isArray(data.video) && data.video.length > 0) {
+                        videoLink = data.video[0];
+                    } else if (typeof data.play === 'string') {
+                        videoLink = data.play;
+                    }
+
+                    // Check if it's a Photo Slideshow
+                    const isPhotoSlideshow = data.images && Array.isArray(data.images) && data.images.length > 0;
+
+                    console.log("Video Link:", videoLink); // Debug log
+                    console.log("Audio Link:", audioLink); // Debug log
+                    console.log("Cover URL:", coverUrl); // Debug log
+
+                    // Populate the UI
+                    const thumbElement = document.getElementById('videoThumb');
+                    if (coverUrl) {
+                        thumbElement.src = coverUrl;
+                    } else {
+                        thumbElement.src = 'https://via.placeholder.com/192x256?text=No+Thumbnail';
+                    }
+
+                    document.getElementById('authorName').innerText = `@${authorName}`;
+                    document.getElementById('videoDesc').innerText = descText;
+                    
+                    const downloadBtn = document.getElementById('downloadBtn');
+                    
+                    if (isPhotoSlideshow) {
+                        // Handle Photo Slideshow
+                        downloadBtn.innerHTML = '<i class="fa-solid fa-image"></i> Open Image Slideshow';
+                        downloadBtn.href = data.images[0];
+                        downloadBtn.style.display = 'flex';
+                        document.getElementById('videoDesc').innerText = "📸 Photo Slideshow: " + descText;
+                    } else if (videoLink) {
+                        // Handle Standard Video
+                        downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> Download No Watermark';
+                        downloadBtn.href = videoLink;
+                        downloadBtn.style.display = 'flex';
+                    } else {
+                        // No video or images found
+                        downloadBtn.style.display = 'none';
+                        showError("No video found. This might be a private video or unavailable content.");
+                    }
+                    
+                    // Handle Audio
+                    const audioBtn = document.getElementById('audioBtn');
+                    if (audioLink) {
+                        audioBtn.href = audioLink;
+                        audioBtn.style.display = 'flex';
+                    } else {
+                        audioBtn.style.display = 'none';
+                    }
+
+                    // Hide loading, show result
+                    loading.classList.add('hidden');
+                    loading.classList.remove('flex');
+                    resultCard.classList.remove('hidden');
+                } else {
+                    throw new Error(json.message || "Failed to fetch video.");
+                }
+            } catch (error) {
+                console.error("Error:", error); // Debug log
+                loading.classList.add('hidden');
+                loading.classList.remove('flex');
+                showError(error.message || "Something went wrong. Please try again.");
+            }
+        }
+
+        function showError(msg) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.innerText = msg;
+            errorMessage.classList.remove('hidden');
+        }
+    </script>
+
+</body>
+</html>
