@@ -1,4 +1,4 @@
-import { TiktokDL } from "@tobyg74/tiktok-api-dl";
+import TiktokDL from "@tobyg74/tiktok-api-dl";
 
 export default async function handler(req, res) {
   const { url } = req.query;
@@ -11,11 +11,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Initialize TiktokDL
+    // Initialize TiktokDL - use the default export correctly
     const tiktok = new TiktokDL();
 
     // Download video data
     const result = await tiktok.download(url);
+
+    console.log("API Result:", result);
 
     if (!result || result.status !== "success") {
       return res.status(400).json({
@@ -42,8 +44,6 @@ export default async function handler(req, res) {
     }
     // Priority 3: Check video.playAddr array (highest resolution first)
     else if (data.video?.playAddr && Array.isArray(data.video.playAddr)) {
-      // playAddr array usually has multiple quality options
-      // The first one is typically the highest quality
       videoLink = data.video.playAddr[0];
       videoQuality = "720p+ (High)";
     }
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
       status: "success",
       data: {
         video: videoLink,
-        videoQuality: videoQuality, // NEW: Include quality info
+        videoQuality: videoQuality,
         audio: audioLink,
         cover: coverUrl,
         title: description,
