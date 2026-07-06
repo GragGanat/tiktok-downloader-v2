@@ -1,0 +1,12 @@
+{
+  "name": "tiktok-downloader-api",
+  "version": "1.0.0",
+  "description": "Free TikTok Downloader API on Vercel",
+  "main": "api/download.js",
+  "scripts": {
+    "start": "node api/download.js"
+  },
+  "dependencies": {
+    "@tobyg74/tiktok-api-dl": "^1.0.0"
+  }
+}
