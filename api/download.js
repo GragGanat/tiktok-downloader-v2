@@ -1,4 +1,4 @@
-import TiktokDL from "@tobyg74/tiktok-api-dl";
+import Tiktok from "@tobyg74/tiktok-api-dl";
 
 export default async function handler(req, res) {
   const { url } = req.query;
@@ -11,11 +11,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Initialize TiktokDL - use the default export correctly
-    const tiktok = new TiktokDL();
-
-    // Download video data
-    const result = await tiktok.download(url);
+    // Use the correct Tiktok.Downloader() method from the library
+    const result = await Tiktok.Downloader(url, {
+      version: "v3", // Try v3 first (most reliable)
+    });
 
     console.log("API Result:", result);
 
