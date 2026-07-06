@@ -4,18 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TikTok Downloader | No Watermark</title>
-    <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Custom gradient text for the title */
         .text-gradient {
-            background: linear-gradient(to right, #00f2fe, #fe0979);
+            background: linear-gradient(to right, #00f2fe, #fe0979 );
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        /* Glassmorphism effect for the result card */
         .glass-card {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -25,10 +21,7 @@
 </head>
 <body class="bg-gray-900 text-white font-sans min-h-screen flex flex-col items-center justify-center p-4">
 
-    <!-- Main Container -->
     <div class="w-full max-w-2xl text-center space-y-8">
-        
-        <!-- Header -->
         <div class="space-y-2">
             <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">
                 TikTok <span class="text-gradient">Downloader</span>
@@ -36,7 +29,6 @@
             <p class="text-gray-400 text-lg">Download videos without watermark for free.</p>
         </div>
 
-        <!-- Input Area -->
         <div class="relative flex items-center w-full">
             <i class="fa-solid fa-link absolute left-4 text-gray-400"></i>
             <input type="text" id="urlInput" placeholder="Paste TikTok link here..." 
@@ -47,58 +39,54 @@
             </button>
         </div>
 
-        <!-- Loading Spinner (Hidden by default) -->
         <div id="loading" class="hidden flex-col items-center justify-center space-y-3 py-8">
             <i class="fa-solid fa-circle-notch fa-spin text-4xl text-pink-500"></i>
             <p class="text-gray-400 animate-pulse">Extracting video magic...</p>
         </div>
 
-        <!-- Error Message (Hidden by default) -->
-        <div id="errorMessage" class="hidden bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm">
-            <!-- Error text goes here -->
-        </div>
+        <div id="errorMessage" class="hidden bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm"></div>
 
-        <!-- Result Card (Hidden by default) -->
         <div id="resultCard" class="hidden glass-card rounded-2xl p-6 shadow-2xl text-left animate-fade-in-up">
             <div class="flex flex-col md:flex-row gap-6 items-center md:items-start">
-                <!-- Thumbnail -->
                 <img id="videoThumb" src="" alt="Thumbnail" class="w-48 h-64 object-cover rounded-xl shadow-md bg-gray-800">
                 
-                <!-- Video Info & Buttons -->
                 <div class="flex flex-col flex-1 space-y-4 w-full">
                     <div>
                         <h3 id="authorName" class="text-xl font-bold text-white">@username</h3>
-                        <p id="videoDesc" class="text-gray-400 text-sm mt-1 line-clamp-3">Video description goes here...</p>
+                        <p id="videoDesc" class="text-gray-400 text-sm mt-1 line-clamp-3"></p>
                     </div>
                     
                     <div class="flex flex-col space-y-3 pt-4">
+                        <!-- The ID for mobile logic -->
                         <a id="downloadBtn" href="#" target="_blank" 
                             class="w-full bg-pink-600 hover:bg-pink-500 text-white text-center font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-download"></i> Download No Watermark
+                            <i class="fa-solid fa-download"></i> Download Video
                         </a>
                         <a id="audioBtn" href="#" target="_blank" 
                             class="w-full bg-gray-700 hover:bg-gray-600 text-white text-center font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
                             <i class="fa-solid fa-music"></i> Download Audio (MP3)
                         </a>
                     </div>
-
-                    <p class="text-xs text-gray-400 text-center mt-2">
-                        📱 <b>iPhone/Android:</b> If the video opens in a new tab, tap the <b>Share</b> icon and select <b>"Save Video"</b> to save it to your Photos.
+                    <p id="mobileHint" class="text-xs text-gray-400 text-center mt-2 hidden">
+                        💡 Tap <b>"Save Video"</b> in the menu to save directly to your Photos.
                     </p>
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
+        // Your Smart Mobile Detection Logic
+        const isMobileDevice = () => {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        };
+
         async function fetchVideo() {
             const urlInput = document.getElementById('urlInput').value;
             const loading = document.getElementById('loading');
             const resultCard = document.getElementById('resultCard');
             const errorMessage = document.getElementById('errorMessage');
 
-            // Reset UI
             errorMessage.classList.add('hidden');
             resultCard.classList.add('hidden');
 
@@ -107,81 +95,63 @@
                 return;
             }
 
-            // Show loading
             loading.classList.remove('hidden');
             loading.classList.add('flex');
 
             try {
                 const apiUrl = `/api/download?url=${encodeURIComponent(urlInput)}`;
-                
                 const response = await fetch(apiUrl);
                 const json = await response.json();
-
-                console.log("Full API Response:", json);
 
                 if (json.status === "success") {
                     const data = json.data;
                     
-                    // 1. Extract Description
+                    // Robust Extraction
                     const descText = data.desc || data.description || data.title || 'No description';
-                    
-                    // 2. Extract Author Name
-                    const authorName = data.author?.nickname || data.author?.uniqueId || data.author || 'user';
-                    
-                    // 3. Extract Thumbnail (Cover) - Try every possible location
-                    let coverUrl = null;
-                    if (data.cover) {
-                        coverUrl = Array.isArray(data.cover) ? data.cover[0] : data.cover;
-                    } else if (data.video?.cover) {
-                        coverUrl = Array.isArray(data.video.cover) ? data.video.cover[0] : data.video.cover;
-                    } else if (data.author?.avatar) {
-                        coverUrl = data.author.avatar;
-                    }
+                    const authorName = data.author?.nickname || data.author || 'user';
+                    let coverUrl = data.cover || (data.video?.cover ? (Array.isArray(data.video.cover) ? data.video.cover[0] : data.video.cover) : data.author?.avatar);
+                    if (Array.isArray(coverUrl)) coverUrl = coverUrl[0];
 
-                    // 4. Extract Video Link - Try every possible location
-                    let videoLink = null;
-                    if (data.video?.playAddr) {
-                        videoLink = Array.isArray(data.video.playAddr) ? data.video.playAddr[0] : data.video.playAddr;
-                    } else if (data.video) {
-                        videoLink = Array.isArray(data.video) ? data.video[0] : (data.video.play || data.play || data.video);
-                    } else if (data.play) {
-                        videoLink = data.play;
-                    }
-
-                    // 5. Extract Audio Link - Try every possible location
-                    let audioLink = null;
-                    if (data.music?.playUrl) {
-                        audioLink = Array.isArray(data.music.playUrl) ? data.music.playUrl[0] : data.music.playUrl;
-                    } else if (data.music) {
-                        audioLink = Array.isArray(data.music) ? data.music[0] : (data.music.play || data.music);
-                    }
-
-                    // 6. Check for Photo Slideshow
-                    const isPhotoSlideshow = data.images && Array.isArray(data.images) && data.images.length > 0;
-
-                    console.log("Extracted Video Link:", videoLink);
-                    console.log("Extracted Audio Link:", audioLink);
-                    console.log("Extracted Cover URL:", coverUrl);
+                    let videoLink = data.video?.playAddr?.[0] || (Array.isArray(data.video) ? data.video[0] : (data.video?.play || data.play || data.video));
+                    let audioLink = data.music?.playUrl?.[0] || (Array.isArray(data.music) ? data.music[0] : (data.music?.play || data.music));
+                    const isPhotoSlideshow = data.images && data.images.length > 0;
 
                     // Update UI
                     document.getElementById('videoThumb').src = coverUrl || 'https://via.placeholder.com/192x256?text=TikTok';
-                    document.getElementById('authorName').innerText = `@${authorName}`;
+                    document.getElementById('authorName' ).innerText = `@${authorName}`;
                     document.getElementById('videoDesc').innerText = descText;
                     
                     const downloadBtn = document.getElementById('downloadBtn');
+                    const mobileHint = document.getElementById('mobileHint');
+
                     if (isPhotoSlideshow) {
-                        downloadBtn.innerHTML = '<i class="fa-solid fa-image"></i> Open Image Slideshow';
+                        downloadBtn.innerHTML = '<i class="fa-solid fa-image"></i> Open Images';
                         downloadBtn.href = data.images[0];
-                        downloadBtn.style.display = 'flex';
-                        document.getElementById('videoDesc').innerText = "📸 Photo Slideshow: " + descText;
                     } else if (videoLink) {
-                        downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> Download No Watermark';
                         downloadBtn.href = videoLink;
-                        downloadBtn.style.display = 'flex';
-                    } else {
-                        downloadBtn.style.display = 'none';
+                        
+                        // Apply Mobile Share Logic
+                        if (isMobileDevice() && navigator.share) {
+                            downloadBtn.innerHTML = '<i class="fa-solid fa-share-nodes"></i> Save to Photos';
+                            mobileHint.classList.remove('hidden');
+                            downloadBtn.onclick = async (e) => {
+                                e.preventDefault();
+                                try {
+                                    await navigator.share({
+                                        title: 'Save TikTok Video',
+                                        text: descText,
+                                        url: videoLink
+                                    });
+                                } catch (err) {
+                                    window.open(videoLink, '_blank');
+                                }
+                            };
+                        } else {
+                            downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> Download No Watermark';
+                            downloadBtn.onclick = null;
+                        }
                     }
-                    
+
                     const audioBtn = document.getElementById('audioBtn');
                     if (audioLink) {
                         audioBtn.href = audioLink;
@@ -190,12 +160,6 @@
                         audioBtn.style.display = 'none';
                     }
 
-                    // If neither video nor audio is found, show error
-                    if (!videoLink && !audioLink && !isPhotoSlideshow) {
-                        throw new Error("Could not find any download links for this video.");
-                    }
-
-                    // Final UI Update
                     loading.classList.add('hidden');
                     loading.classList.remove('flex');
                     resultCard.classList.remove('hidden');
@@ -203,10 +167,9 @@
                     throw new Error(json.message || "Failed to fetch video.");
                 }
             } catch (error) {
-                console.error("Extraction Error:", error);
                 loading.classList.add('hidden');
                 loading.classList.remove('flex');
-                showError(error.message || "Something went wrong. Please try again.");
+                showError(error.message || "Something went wrong.");
             }
         }
 
