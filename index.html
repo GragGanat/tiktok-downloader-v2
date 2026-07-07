@@ -11,7 +11,7 @@
     <style>
         /* Custom gradient text for the title */
         .text-gradient {
-            background: linear-gradient(to right, #00f2fe, #fe0979);
+            background: linear-gradient(to right, #00f2fe, #fe0979 );
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -120,14 +120,6 @@
             }
         }
 
-        /* Video player styling */
-        .video-player {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: #000;
-        }
-
         /* Video container */
         .video-container {
             position: relative;
@@ -194,16 +186,14 @@
         <!-- Result Card (Hidden by default) -->
         <div id="resultCard" class="hidden glass-card rounded-2xl p-6 shadow-2xl text-left animate-fade-in-up">
             <div class="flex flex-col md:flex-row gap-6 items-start">
-                <!-- Video Player Container (SAME AS RENDER) -->
+                
+                <!-- Video Thumbnail Container -->
                 <div class="video-container w-full md:w-48 flex-shrink-0">
-                    <video id="videoPlayer" 
-                        class="video-player" 
-                        controls 
-                        crossorigin="anonymous"
-                        poster="">
-                        <source id="videoSource" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
+                    <img id="videoThumbnail" 
+                        class="w-full h-full object-contain bg-black" 
+                        referrerpolicy="no-referrer" 
+                        alt="TikTok Thumbnail" 
+                        src="">
                 </div>
                 
                 <!-- Video Info & Buttons -->
@@ -471,16 +461,19 @@
                     currentVideoLink = videoLink;
                     currentAudioLink = audioLink;
 
-                    // Set video player (SAME AS RENDER APP!)
-                    const videoPlayer = document.getElementById('videoPlayer');
-                    const videoSource = document.getElementById('videoSource');
+                    // Set video thumbnail
+                    const videoThumbnail = document.getElementById('videoThumbnail');
 
-                    if (videoLink) {
-                        videoSource.src = videoLink;
-                        videoPlayer.poster = coverUrl || '';
-                        videoPlayer.load();
-                        console.log("Video player loaded with:", videoLink);
+                    // 1. Display the thumbnail image
+                    if (coverUrl) {
+                        videoThumbnail.src = coverUrl;
                     } else {
+                        // Fallback image just in case TikTok doesn't provide a cover
+                        videoThumbnail.src = 'https://via.placeholder.com/300x400/111827/ffffff?text=No+Preview';
+                    }
+
+                    // 2. Ensure we actually got a download link
+                    if (!videoLink && !isPhotoSlideshow ) {
                         throw new Error("No video link found in response");
                     }
 
