@@ -438,19 +438,30 @@
                         audioLink = Array.isArray(data.music) ? data.music[0] : (data.music.play || data.music);
                     }
 
-                    // Extract Cover (for poster image)
-                    let coverUrl = null;
-                    if (data.cover) {
-                        coverUrl = Array.isArray(data.cover) ? data.cover[0] : data.cover;
-                    } else if (data.video?.cover) {
-                        coverUrl = Array.isArray(data.video.cover) ? data.video.cover[0] : data.video.cover;
-                    }
+                   // Check for Photo Slideshow FIRST
+const isPhotoSlideshow = data.images && Array.isArray(data.images) && data.images.length > 0;
 
-                    // Extract Video Quality
-                    const videoQuality = data.videoQuality || 'Unknown Quality';
+// Extract Cover (for poster image)
+let coverUrl = null;
 
-                    // Check for Photo Slideshow
-                    const isPhotoSlideshow = data.images && Array.isArray(data.images) && data.images.length > 0;
+if (isPhotoSlideshow) {
+    // If it's a slideshow, use the first image as the thumbnail
+    coverUrl = data.images[0];
+} else if (data.origin_cover) {
+    // Prioritize the high-quality original video cover
+    coverUrl = Array.isArray(data.origin_cover) ? data.origin_cover[0] : data.origin_cover;
+} else if (data.video?.origin_cover) {
+    coverUrl = Array.isArray(data.video.origin_cover) ? data.video.origin_cover[0] : data.video.origin_cover;
+} else if (data.video?.cover) {
+    // Fallback to standard cover
+    coverUrl = Array.isArray(data.video.cover) ? data.video.cover[0] : data.video.cover;
+} else if (data.cover) {
+    coverUrl = Array.isArray(data.cover) ? data.cover[0] : data.cover;
+}
+
+// Extract Video Quality
+const videoQuality = data.videoQuality || 'Unknown Quality';
+
 
                     console.log("Extracted Video Link:", videoLink);
                     console.log("Extracted Audio Link:", audioLink);
