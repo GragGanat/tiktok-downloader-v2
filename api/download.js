@@ -122,9 +122,17 @@ export default async function handler(req, res) {
 
       const data = result.result;
 
-      console.log("========== FULL RESULT ==========");
-      console.log(JSON.stringify(data, null, 2));
-      console.log("=================================");
+     console.log("Keys:", Object.keys(data));
+
+     console.log("Video:", data.video);
+     console.log("Cover:", data.cover);
+     console.log("OriginCover:", data.originCover);
+     console.log("DynamicCover:", data.dynamicCover);
+
+    if (data.video) {
+    console.log("Video Keys:", Object.keys(data.video));
+    console.log("Video Object:", data.video);
+}
 
       // Extract highest quality video
       const { videoLink, videoQuality } = extractHighestQualityVideo(data);
