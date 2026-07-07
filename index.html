@@ -120,27 +120,22 @@
             }
         }
 
-        /* Video preview thumbnail styling */
-        .video-preview-container {
+        /* Video player styling */
+        .video-player {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        /* Video container */
+        .video-container {
             position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 0.75rem;
             overflow: hidden;
-            cursor: pointer;
-        }
-
-        .video-preview-container:hover .play-button {
-            transform: scale(1.1);
-        }
-
-        .play-button {
-            transition: transform 0.3s ease-out;
-        }
-
-        .video-overlay {
-            transition: background-color 0.3s ease-out;
-        }
-
-        .video-preview-container:hover .video-overlay {
-            background-color: rgba(0, 0, 0, 0.6);
         }
     </style>
 </head>
@@ -199,17 +194,16 @@
         <!-- Result Card (Hidden by default) -->
         <div id="resultCard" class="hidden glass-card rounded-2xl p-6 shadow-2xl text-left animate-fade-in-up">
             <div class="flex flex-col md:flex-row gap-6 items-start">
-                <!-- Video Preview Thumbnail with Play Button -->
-                <div id="videoPreviewContainer" onclick="downloadVideoPreview()" 
-                    class="video-preview-container w-full md:w-48 h-64 rounded-xl shadow-md bg-gray-800 overflow-hidden flex-shrink-0 group">
-                    <img id="videoPreview" src="" alt="Video Thumbnail" class="w-full h-full object-cover">
-                    
-                    <!-- Play Button Overlay -->
-                    <div class="video-overlay absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/60 transition-all">
-                        <button class="play-button w-16 h-16 bg-pink-600 hover:bg-pink-500 rounded-full flex items-center justify-center transition-all transform group-hover:scale-110">
-                            <i class="fa-solid fa-play text-white text-2xl ml-1"></i>
-                        </button>
-                    </div>
+                <!-- Video Player Container (SAME AS RENDER) -->
+                <div class="video-container w-full md:w-48 flex-shrink-0">
+                    <video id="videoPlayer" 
+                        class="video-player" 
+                        controls 
+                        crossorigin="anonymous"
+                        poster="">
+                        <source id="videoSource" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
                 </div>
                 
                 <!-- Video Info & Buttons -->
@@ -330,17 +324,6 @@
             });
         }
 
-        // ==================== DOWNLOAD VIDEO PREVIEW ====================
-        function downloadVideoPreview() {
-            if (!currentVideoLink) {
-                showToast('❌ No video link available', 'error');
-                return;
-            }
-            
-            showToast('📺 Opening video in new tab...', 'info', 2000);
-            window.open(currentVideoLink, '_blank');
-        }
-
         // ==================== SET QUALITY BADGE ====================
         function setQualityBadge(quality) {
             const badge = document.getElementById('qualityBadge');
@@ -447,17 +430,7 @@
                     // Extract Author Name
                     const authorName = data.author?.nickname || data.author?.uniqueId || data.author || 'user';
                     
-                    // Extract Thumbnail (Cover)
-                    let coverUrl = null;
-                    if (data.cover) {
-                        coverUrl = Array.isArray(data.cover) ? data.cover[0] : data.cover;
-                    } else if (data.video?.cover) {
-                        coverUrl = Array.isArray(data.video.cover) ? data.video.cover[0] : data.video.cover;
-                    } else if (data.author?.avatar) {
-                        coverUrl = data.author.avatar;
-                    }
-
-                    // Extract Video Link
+                    // Extract Video Link (PRIMARY - use this for video player)
                     let videoLink = null;
                     if (data.video?.playAddr) {
                         videoLink = Array.isArray(data.video.playAddr) ? data.video.playAddr[0] : data.video.playAddr;
@@ -475,6 +448,14 @@
                         audioLink = Array.isArray(data.music) ? data.music[0] : (data.music.play || data.music);
                     }
 
+                    // Extract Cover (for poster image)
+                    let coverUrl = null;
+                    if (data.cover) {
+                        coverUrl = Array.isArray(data.cover) ? data.cover[0] : data.cover;
+                    } else if (data.video?.cover) {
+                        coverUrl = Array.isArray(data.video.cover) ? data.video.cover[0] : data.video.cover;
+                    }
+
                     // Extract Video Quality
                     const videoQuality = data.videoQuality || 'Unknown Quality';
 
@@ -490,13 +471,17 @@
                     currentVideoLink = videoLink;
                     currentAudioLink = audioLink;
 
-                    // Set video preview thumbnail (no CORS issues!)
-                    const videoPreview = document.getElementById('videoPreview');
+                    // Set video player (SAME AS RENDER APP!)
+                    const videoPlayer = document.getElementById('videoPlayer');
+                    const videoSource = document.getElementById('videoSource');
 
-                    if (coverUrl) {
-                        videoPreview.src = coverUrl;
+                    if (videoLink) {
+                        videoSource.src = videoLink;
+                        videoPlayer.poster = coverUrl || '';
+                        videoPlayer.load();
+                        console.log("Video player loaded with:", videoLink);
                     } else {
-                        videoPreview.src = 'https://via.placeholder.com/192x256?text=TikTok+Video';
+                        throw new Error("No video link found in response");
                     }
 
                     // Update UI
