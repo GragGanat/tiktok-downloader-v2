@@ -466,7 +466,7 @@
 
                     // 1. Display the thumbnail image
                     if (coverUrl) {
-                        videoThumbnail.src = coverUrl;
+                        videoThumbnail.src = `/api/thumbnail?url=${encodeURIComponent(coverUrl)}`;
                     } else {
                         // Fallback image just in case TikTok doesn't provide a cover
                         videoThumbnail.src = 'https://via.placeholder.com/300x400/111827/ffffff?text=No+Preview';
